@@ -477,6 +477,7 @@
     InvestorDict Game Mode · Powered by Claude AI
   </footer>
 
+  <script src="config.js"></script>
   <script>
     const STORAGE_KEY = 'investordict_game_state';
     let gameData = null;
@@ -508,13 +509,13 @@
     
     // API
     async function fetchTodayGame() {
-      const res = await fetch('/api/game/today');
+      const res = await fetch(`${window.API_BASE_URL}/api/game/today`);
       if (!res.ok) throw new Error('Failed to load game');
       return res.json();
     }
     
     async function submitGuess(guess) {
-      const res = await fetch('/api/game/guess', {
+      const res = await fetch(`${window.API_BASE_URL}/api/game/guess`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ guess })
@@ -524,7 +525,7 @@
     }
 
     async function fetchReveal() {
-      const res = await fetch('/api/game/reveal', { method: 'POST' });
+      const res = await fetch(`${window.API_BASE_URL}/api/game/reveal`, { method: 'POST' });
       if (!res.ok) throw new Error('Failed to fetch reveal');
       return res.json();
     }

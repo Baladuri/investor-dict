@@ -3,7 +3,23 @@ import cors from 'cors';
 import Anthropic from '@anthropic-ai/sdk';
 
 const app = express();
-app.use(cors());
+
+const allowedOrigins = [
+  'http://localhost:3000', // Docker local frontend
+  'http://127.0.0.1:3000',
+  process.env.FRONTEND_URL // Inject URL via hosted environment variable (e.g Render frontend URL)
+].filter(Boolean);
+
+app.use(cors({
+  origin: function (origin, callback) {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('CORS Policy: Request denied from origin: ' + origin));
+    }
+  }
+}));
+
 app.use(express.json());
 
 const PORT = process.env.PORT || 3001;
