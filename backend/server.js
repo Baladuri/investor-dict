@@ -10,16 +10,24 @@ const allowedOrigins = [
   process.env.FRONTEND_URL // Inject URL via hosted environment variable (e.g Render frontend URL)
 ].filter(Boolean);
 
-app.use(cors({
+const corsOptions = {
   origin: function (origin, callback) {
     if (!origin || allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
-      callback(new Error('CORS Policy: Request denied from origin: ' + origin));
+      console.error('CORS blocked origin:', origin);
+      callback(null, false); // IMPORTANT: don't throw error
     }
-  }
-}));
+  },
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+};
 
+// MUST be first
+app.use(cors(corsOptions));
+
+// MUST explicitly handle preflight
+app.options('*', cors(corsOptions));
 app.use(express.json());
 
 const PORT = process.env.PORT || 3001;
@@ -54,7 +62,7 @@ const CACHE_TTL = 5 * 60 * 1000;
 const STOCKS = [
   { ticker: 'AAPL', name: 'Apple' },
   { ticker: 'NVDA', name: 'Nvidia' },
-  { ticker: 'NKE',  name: 'Nike' }
+  { ticker: 'NKE', name: 'Nike' }
 ];
 
 async function fetchOneStock(ticker, name) {
@@ -275,11 +283,11 @@ app.post('/api/learn/daily', async (req, res) => {
 // ── Game Mode Logic ────────────────────────────────
 const GAME_POOL = [
   { ticker: 'AAPL', name: 'Apple' },
-  { ticker: 'NKE',  name: 'Nike' },
+  { ticker: 'NKE', name: 'Nike' },
   { ticker: 'TSLA', name: 'Tesla' },
   { ticker: 'NVDA', name: 'Nvidia' },
-  { ticker: 'MCD',  name: 'McDonalds' },
-  { ticker: 'KO',   name: 'Coca-Cola' },
+  { ticker: 'MCD', name: 'McDonalds' },
+  { ticker: 'KO', name: 'Coca-Cola' },
   { ticker: 'AMZN', name: 'Amazon' },
   { ticker: 'MSFT', name: 'Microsoft' },
   { ticker: 'BMW.DE', name: 'BMW' },
@@ -319,7 +327,7 @@ Always respond with valid JSON only. No markdown, no code fences.`;
 
 async function getDailyGameData() {
   const todayDateStr = new Date().toISOString().split('T')[0];
-  
+
   if (gameCache.dateStr === todayDateStr && gameCache.data) {
     console.log('📦 Using cached game data for today');
     return gameCache.data;
@@ -333,10 +341,10 @@ async function getDailyGameData() {
   const stockData = await fetchGameStock(company.ticker);
 
   // Format data for Claude
-  const capStr = stockData.marketCap 
+  const capStr = stockData.marketCap
     ? (stockData.marketCap >= 1e12 ? `$${(stockData.marketCap / 1e12).toFixed(2)}T` : `$${(stockData.marketCap / 1e9).toFixed(0)}B`)
     : 'Unknown';
-    
+
   const dataText = `
 Company: ${company.name}
 Sector: ${stockData.sector}
@@ -405,7 +413,7 @@ app.get('/api/game/today', async (req, res) => {
 
 app.post('/api/game/guess', async (req, res) => {
   const { guess } = req.body;
-  
+
   if (!guess || typeof guess !== 'string') {
     return res.status(400).json({ error: 'Please provide a guess.' });
   }
@@ -414,11 +422,11 @@ app.post('/api/game/guess', async (req, res) => {
     const gameData = await getDailyGameData();
     const actualName = gameData.reveal.name.toLowerCase();
     const userGuess = guess.toLowerCase().trim();
-    
+
     // Simple matching (e.g. "Coca-Cola" matches "coca cola", "mcdonalds" matches "McDonalds")
-    const isCorrect = userGuess === actualName || 
-                      actualName.includes(userGuess) && userGuess.length > 3 || 
-                      actualName.replace(/[^a-z]/g, '') === userGuess.replace(/[^a-z]/g, '');
+    const isCorrect = userGuess === actualName ||
+      actualName.includes(userGuess) && userGuess.length > 3 ||
+      actualName.replace(/[^a-z]/g, '') === userGuess.replace(/[^a-z]/g, '');
 
     if (isCorrect) {
       res.json({ correct: true, reveal: gameData.reveal });
