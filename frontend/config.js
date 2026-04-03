@@ -2,7 +2,7 @@
 
 // 1. In production, place your external Render backend URL here (without trailing slash).
 // e.g. 'https://investordict-backend.onrender.com'
-const PROD_BACKEND_URL = 'https://investor-dict.onrender.com/';
+const PROD_BACKEND_URL = 'https://investor-dict.onrender.com';
 
 // 2. Local development URL running via Docker Compose (Port 3001).
 const LOCAL_BACKEND_URL = 'http://localhost:3001';
