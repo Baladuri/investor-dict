@@ -1,0 +1,684 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Guess the Company — InvestorDict</title>
+  <meta name="description" content="Guess the company based purely on its financial metrics. A daily investing game by InvestorDict.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    /* ═══════════════════════════════════════════
+       CSS Variables & Reset (Inherited from Main)
+       ═══════════════════════════════════════════ */
+    :root {
+      --bg-primary: #0a0f1a;
+      --bg-secondary: #111827;
+      --bg-card: rgba(17, 24, 39, 0.7);
+      --bg-card-hover: rgba(25, 35, 55, 0.8);
+      --bg-input: rgba(255, 255, 255, 0.06);
+      --border-subtle: rgba(255, 255, 255, 0.08);
+      --border-glow: rgba(240, 180, 41, 0.3);
+      --text-primary: #f1f5f9;
+      --text-secondary: #94a3b8;
+      --text-muted: #64748b;
+      --accent: #f0b429;
+      --accent-hover: #f7c948;
+      --accent-glow: rgba(240, 180, 41, 0.15);
+      --green: #34d399;
+      --red: #f87171;
+      --blue: #60a5fa;
+      --radius: 16px;
+      --radius-sm: 10px;
+      --transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    *, *::before, *::after {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background-color: var(--bg-primary);
+      color: var(--text-primary);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 0 16px;
+      overflow-x: hidden;
+    }
+
+    /* Ambient background glow */
+    body::before {
+      content: '';
+      position: fixed;
+      top: -200px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 600px;
+      height: 600px;
+      background: radial-gradient(circle, rgba(96, 165, 250, 0.06) 0%, transparent 70%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* ═══════════════════════════════════════════
+       Header Nav
+       ═══════════════════════════════════════════ */
+    .nav-bar {
+      width: 100%;
+      max-width: 560px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 16px 0;
+      margin-bottom: 20px;
+      position: relative;
+      z-index: 1;
+    }
+    .home-link {
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 0.9rem;
+      font-weight: 500;
+      transition: color var(--transition);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .home-link:hover {
+      color: var(--text-primary);
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 30px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .logo {
+      font-size: 2.5rem;
+      font-weight: 800;
+      letter-spacing: -1px;
+      margin-bottom: 8px;
+    }
+    .logo-icon {
+      display: inline-block;
+      margin-right: 6px;
+    }
+    .logo-accent {
+      background: linear-gradient(135deg, var(--blue) 0%, #3b82f6 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .tagline {
+      font-size: 1.1rem;
+      color: var(--text-secondary);
+      font-weight: 400;
+    }
+
+    /* ═══════════════════════════════════════════
+       Game Section
+       ═══════════════════════════════════════════ */
+    .game-container {
+      width: 100%;
+      max-width: 560px;
+      position: relative;
+      z-index: 1;
+      margin-bottom: 60px;
+    }
+
+    /* Score Tracker */
+    .score-tracker {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      margin-bottom: 20px;
+    }
+    .score-pip {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: var(--green);
+      box-shadow: 0 0 10px rgba(52, 211, 153, 0.4);
+      transition: all 0.3s ease;
+    }
+    .score-pip.lost {
+      background: var(--bg-input);
+      box-shadow: none;
+    }
+
+    /* Metrics Card */
+    .metrics-card {
+      background: var(--bg-card);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius);
+      padding: 24px;
+      animation: slideUp 0.4s ease;
+      margin-bottom: 20px;
+    }
+    
+    .metrics-header {
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 16px;
+      text-align: center;
+    }
+
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+    
+    .metric-box {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      border-radius: var(--radius-sm);
+      padding: 16px;
+      text-align: center;
+    }
+    
+    .metric-label {
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+      margin-bottom: 6px;
+    }
+    
+    .metric-value {
+      font-size: 1.3rem;
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+
+    /* Hints */
+    .hint-box {
+      background: rgba(96, 165, 250, 0.05);
+      border: 1px solid rgba(96, 165, 250, 0.2);
+      border-left: 3px solid var(--blue);
+      border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+      padding: 14px 16px;
+      margin-top: 16px;
+      display: none;
+      animation: fadeIn 0.3s ease;
+    }
+    
+    .hint-label {
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--blue);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 4px;
+    }
+    
+    .hint-content {
+      font-size: 0.95rem;
+      color: var(--text-secondary);
+      line-height: 1.5;
+    }
+
+    /* Input Section */
+    .guess-wrapper {
+      display: flex;
+      gap: 10px;
+      background: var(--bg-card);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius);
+      padding: 6px;
+      transition: all var(--transition);
+      margin-bottom: 16px;
+    }
+
+    .guess-wrapper:focus-within {
+      border-color: rgba(96, 165, 250, 0.5);
+      box-shadow: 0 0 20px rgba(96, 165, 250, 0.15);
+    }
+
+    #guess-input {
+      flex: 1;
+      background: transparent;
+      border: none;
+      outline: none;
+      color: var(--text-primary);
+      font-size: 1.05rem;
+      font-family: inherit;
+      padding: 14px 16px;
+    }
+
+    #guess-input::placeholder {
+      color: var(--text-muted);
+    }
+
+    #guess-btn {
+      background: linear-gradient(135deg, var(--blue) 0%, #2563eb 100%);
+      color: #fff;
+      border: none;
+      border-radius: var(--radius-sm);
+      padding: 14px 24px;
+      font-size: 0.95rem;
+      font-weight: 700;
+      font-family: inherit;
+      cursor: pointer;
+      transition: transform var(--transition), box-shadow var(--transition);
+      white-space: nowrap;
+    }
+
+    #guess-btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
+    }
+    
+    #guess-btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
+
+    .feedback-msg {
+      text-align: center;
+      font-size: 0.95rem;
+      font-weight: 500;
+      min-height: 24px;
+      margin-bottom: 20px;
+    }
+    .feedback-msg.error { color: var(--red); animation: shake 0.4s; }
+    .feedback-msg.success { color: var(--green); }
+
+    /* Final Reveal */
+    .reveal-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-glow);
+      border-radius: var(--radius);
+      padding: 28px;
+      text-align: center;
+      display: none;
+      animation: slideUp 0.5s ease;
+    }
+    
+    .reveal-card.game-over {
+      border-color: var(--border-subtle);
+    }
+
+    .reveal-title {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 4px;
+    }
+    
+    .reveal-company {
+      font-size: 2.2rem;
+      font-weight: 800;
+      color: var(--accent);
+      margin-bottom: 16px;
+    }
+
+    .reveal-card.game-over .reveal-company {
+      color: var(--text-primary);
+    }
+
+    .reveal-explanation {
+      font-size: 1.05rem;
+      line-height: 1.6;
+      color: var(--text-secondary);
+      background: rgba(255, 255, 255, 0.03);
+      padding: 16px;
+      border-radius: var(--radius-sm);
+      text-align: left;
+    }
+    
+    .come-back {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      margin-top: 24px;
+      padding-top: 20px;
+      border-top: 1px solid var(--border-subtle);
+    }
+
+    /* Loader */
+    .loader {
+      text-align: center;
+      padding: 40px;
+      color: var(--text-muted);
+      animation: pulse 1.5s infinite;
+    }
+
+    @keyframes slideUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to   { opacity: 1; }
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 0.5; }
+      50%      { opacity: 1; }
+    }
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-5px); }
+      50% { transform: translateX(5px); }
+      75% { transform: translateX(-5px); }
+    }
+
+    /* Footer */
+    .footer {
+      margin-top: auto;
+      padding: 24px 0;
+      text-align: center;
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      position: relative;
+      z-index: 1;
+    }
+  </style>
+</head>
+<body>
+
+  <nav class="nav-bar">
+    <a href="index.html" class="home-link">
+      <span>←</span> Back to InvestorDict
+    </a>
+  </nav>
+
+  <header class="header">
+    <h1 class="logo">
+      <span class="logo-icon">🕵️‍♂️</span><span class="logo-accent">Guess the Company</span>
+    </h1>
+    <p class="tagline">Look at the real numbers. Guess the stock.</p>
+  </header>
+
+  <main class="game-container">
+    <div id="loading" class="loader">Loading today's challenge...</div>
+    
+    <div id="game-content" style="display: none;">
+      <div class="score-tracker" id="score-tracker">
+        <div class="score-pip" id="pip-1"></div>
+        <div class="score-pip" id="pip-2"></div>
+        <div class="score-pip" id="pip-3"></div>
+      </div>
+
+      <div class="metrics-card">
+        <div class="metrics-header">Today's Company Data</div>
+        <div class="metrics-grid">
+          <div class="metric-box">
+            <div class="metric-label">P/E Ratio</div>
+            <div class="metric-value" id="val-pe">-</div>
+          </div>
+          <div class="metric-box">
+            <div class="metric-label">Market Cap</div>
+            <div class="metric-value" id="val-cap">-</div>
+          </div>
+          <div class="metric-box">
+            <div class="metric-label">Revenue Growth</div>
+            <div class="metric-value" id="val-rev">-</div>
+          </div>
+          <div class="metric-box">
+            <div class="metric-label">Dividend Yield</div>
+            <div class="metric-value" id="val-div">-</div>
+          </div>
+        </div>
+
+        <div class="hint-box" id="hint-2-box">
+          <div class="hint-label">Hint 2</div>
+          <div class="hint-content" id="val-hint2"></div>
+        </div>
+
+        <div class="hint-box" id="hint-3-box">
+          <div class="hint-label">Hint 3</div>
+          <div class="hint-content" id="val-hint3"></div>
+        </div>
+      </div>
+
+      <div id="input-section">
+        <div class="guess-wrapper">
+          <input
+            type="text"
+            id="guess-input"
+            placeholder="Type your guess here..."
+            autocomplete="off"
+            spellcheck="false"
+          >
+          <button id="guess-btn">Guess</button>
+        </div>
+        <div class="feedback-msg" id="feedback"></div>
+      </div>
+
+      <div class="reveal-card" id="reveal-card">
+        <div class="reveal-title" id="reveal-title">It was...</div>
+        <div class="reveal-company" id="reveal-name">Apple (AAPL)</div>
+        <div class="reveal-explanation" id="reveal-exp"></div>
+        <div class="come-back">Come back tomorrow for a new company challenge!</div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="footer">
+    InvestorDict Game Mode · Powered by Claude AI
+  </footer>
+
+  <script>
+    const STORAGE_KEY = 'investordict_game_state';
+    let gameData = null;
+    let attempts = 0;
+    
+    // DOM Elements
+    const elLoading = document.getElementById('loading');
+    const elGameContent = document.getElementById('game-content');
+    
+    const elPe = document.getElementById('val-pe');
+    const elCap = document.getElementById('val-cap');
+    const elRev = document.getElementById('val-rev');
+    const elDiv = document.getElementById('val-div');
+    
+    const elHint2Box = document.getElementById('hint-2-box');
+    const elHint3Box = document.getElementById('hint-3-box');
+    const elHint2 = document.getElementById('val-hint2');
+    const elHint3 = document.getElementById('val-hint3');
+    
+    const elInputSec = document.getElementById('input-section');
+    const elInput = document.getElementById('guess-input');
+    const elBtn = document.getElementById('guess-btn');
+    const elFeedback = document.getElementById('feedback');
+    
+    const elRevealCard = document.getElementById('reveal-card');
+    const elRevealTitle = document.getElementById('reveal-title');
+    const elRevealName = document.getElementById('reveal-name');
+    const elRevealExp = document.getElementById('reveal-exp');
+    
+    // API
+    async function fetchTodayGame() {
+      const res = await fetch('/api/game/today');
+      if (!res.ok) throw new Error('Failed to load game');
+      return res.json();
+    }
+    
+    async function submitGuess(guess) {
+      const res = await fetch('/api/game/guess', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ guess })
+      });
+      if (!res.ok) throw new Error('Failed to verify guess');
+      return res.json();
+    }
+
+    async function fetchReveal() {
+      const res = await fetch('/api/game/reveal', { method: 'POST' });
+      if (!res.ok) throw new Error('Failed to fetch reveal');
+      return res.json();
+    }
+
+    // State Management
+    function loadState(todayStr) {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) {
+        try {
+          const state = JSON.parse(raw);
+          if (state.date === todayStr) return state;
+        } catch(e) {}
+      }
+      return { date: todayStr, attempts: 0, completed: false, score: 0 };
+    }
+    
+    function saveState(state) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    }
+
+    function updatePips(currentAttempts) {
+      if (currentAttempts >= 1) document.getElementById('pip-1').classList.add('lost');
+      if (currentAttempts >= 2) document.getElementById('pip-2').classList.add('lost');
+      if (currentAttempts >= 3) document.getElementById('pip-3').classList.add('lost');
+    }
+
+    function showReveal(revealInfo, isWin, score) {
+      elInputSec.style.display = 'none';
+      elRevealCard.style.display = 'block';
+      
+      elRevealName.textContent = `${revealInfo.name} (${revealInfo.ticker})`;
+      elRevealExp.textContent = revealInfo.explanation;
+      
+      if (isWin) {
+        elRevealTitle.textContent = `You got it! Score: ${score}/3`;
+        elRevealCard.classList.remove('game-over');
+      } else {
+        elRevealTitle.textContent = 'Game Over. It was...';
+        elRevealCard.classList.add('game-over');
+      }
+    }
+
+    function showHints(currentAttempts) {
+      if (currentAttempts >= 1) {
+        elHint2Box.style.display = 'block';
+      }
+      if (currentAttempts >= 2) {
+        elHint3Box.style.display = 'block';
+      }
+    }
+
+    async function initGame() {
+      try {
+        gameData = await fetchTodayGame();
+        
+        elPe.textContent = gameData.metrics.peRatio;
+        elCap.textContent = gameData.metrics.marketCap;
+        elRev.textContent = gameData.metrics.revenueGrowth;
+        elDiv.textContent = gameData.metrics.dividendYield;
+        
+        elHint2.textContent = gameData.hints.hint2;
+        elHint3.textContent = gameData.hints.hint3;
+        
+        const state = loadState(gameData.date);
+        attempts = state.attempts;
+        
+        updatePips(attempts);
+        showHints(attempts);
+        
+        elLoading.style.display = 'none';
+        elGameContent.style.display = 'block';
+        
+        if (state.completed) {
+          // Fetch reveal since game is already over
+          const revealData = await fetchReveal();
+          showReveal(revealData.reveal, state.score > 0, state.score);
+        } else {
+          elInput.focus();
+        }
+      } catch (e) {
+        elLoading.textContent = "Failed to load today's game. Please try again later.";
+      }
+    }
+
+    async function handleGuess() {
+      const guess = elInput.value.trim();
+      if (!guess) return;
+      
+      elBtn.disabled = true;
+      elInput.disabled = true;
+      
+      try {
+        const result = await submitGuess(guess);
+        
+        if (result.correct) {
+          const score = 3 - attempts;
+          const state = { date: gameData.date, attempts, completed: true, score };
+          saveState(state);
+          
+          elFeedback.textContent = "Correct!";
+          elFeedback.className = "feedback-msg success";
+          updatePips(attempts);
+          showReveal(result.reveal, true, score);
+        } else {
+          attempts++;
+          const state = { date: gameData.date, attempts, completed: false, score: 0 };
+          
+          elInput.value = '';
+          elFeedback.textContent = "Incorrect, try again!";
+          elFeedback.className = "feedback-msg error";
+          
+          // Re-trigger animation
+          elFeedback.style.animation = 'none';
+          elFeedback.offsetHeight; 
+          elFeedback.style.animation = null;
+          
+          updatePips(attempts);
+          showHints(attempts);
+          
+          if (attempts >= 3) {
+            state.completed = true;
+            state.score = 0;
+            saveState(state);
+            
+            elFeedback.textContent = "Out of guesses!";
+            const revealData = await fetchReveal();
+            showReveal(revealData.reveal, false, 0);
+          } else {
+            saveState(state);
+            setTimeout(() => { 
+              elFeedback.textContent = ""; 
+              elFeedback.className = "feedback-msg";
+            }, 2000);
+          }
+        }
+      } catch (e) {
+        elFeedback.textContent = "Error checking guess. Try again.";
+        elFeedback.className = "feedback-msg error";
+      } finally {
+        if (attempts < 3) {
+          elBtn.disabled = false;
+          elInput.disabled = false;
+          elInput.focus();
+        }
+      }
+    }
+
+    elBtn.addEventListener('click', handleGuess);
+    elInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') handleGuess();
+    });
+
+    // Start
+    initGame();
+  </script>
+</body>
+</html>
