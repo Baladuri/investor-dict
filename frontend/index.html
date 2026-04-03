@@ -511,6 +511,7 @@
     <footer class="footer">InvestorDict — Powered by Claude AI</footer>
   </div>
 
+  <script src="config.js"></script>
   <script>
     // ── Local Storage Keys ──
     const PROFILE_KEY = 'investordict_profile';
@@ -618,7 +619,7 @@
       }
 
       try {
-        const res = await fetch('/api/learn/daily', {
+        const res = await fetch(`${window.API_BASE_URL}/api/learn/daily`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ profile: userProfile, seenConcepts: state.seenConcepts })
@@ -652,7 +653,7 @@
 
     // ── Term Explainer Tool ──
     async function callBackend(term) {
-      const response = await fetch('/api/explain', {
+      const response = await fetch(`${window.API_BASE_URL}/api/explain`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ term, profile: userProfile })
